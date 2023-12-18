@@ -1,4 +1,5 @@
 import os
+import random
 
 # function to check whether the string is terminal,preterminals, or non terminals
 # - we need to stop the recursion if we reach to terminal words
@@ -36,6 +37,60 @@ def append_to_file(filename, content):
     file = open(filename, 'a')
     file.write(content + '\n')
 
+# recusive function to generate sentence
+# concept of depth used to avoid long sentences. 
+def generate_sentence(grammar, symbol='S', depth=0, max_depth=4):
+    # base condition to return word if it is terminal
+    if check_terminals(symbol):
+        return symbol   
+    else:
+        # filter out terminal words
+        filtered_symbols = [item for item in grammar[symbol] if not isinstance(item, list)]
+        if depth >= max_depth: 
+            # if max depth achieved go for terminal words
+            if len(filtered_symbols) != 0:
+                return random.choice(filtered_symbols) + ' '
+            # else call the function to generate sentence without nested grammer.
+            else:
+                return gen_from_grammar(remove_nested_list(grammar),symbol,depth,max_depth)
+        else:
+            # call the function to get into terminal words
+            return gen_from_grammar(grammar,symbol,depth,max_depth)
+
+
+# function to generate function sentence from given grammer
+def gen_from_grammar(grammar,symbol,depth,max_depth):
+    production = random.choice(grammar[symbol])
+    sentence = ''
+    # loop through the list of non terminal grammer to get into terminal
+    if isinstance(production, list):
+        for i in production:
+            sentence += generate_sentence(grammar,i, depth + 1, max_depth)
+    # get the terminal via current symbol
+    else:
+        sentence += generate_sentence(grammar,production, depth + 1, max_depth) + " "
+    return sentence
+
+
+def remove_nested_list(input_dict):
+  # empty dictionary to store result
+	result_dict = {}
+
+	for key, value in input_dict.items():
+		arr = []
+    # iterate through each value to find nested values
+		for i in value:
+				if not isinstance(i, list):
+						arr.append(i)
+				else:
+            # insert list into dictionary only if there is no nested value
+            # nested value check => if key exists in list
+						isNested = any(item == key for item in i)
+						if not isNested:
+								arr.append(i)
+
+		result_dict[key] = arr
+	return result_dict
 
 if __name__ == '__main__':
     # filename for parsing grammer file
@@ -43,8 +98,6 @@ if __name__ == '__main__':
     filepath = os.path.join(os.getcwd(),filename)
     grammar = read_grammer(filepath)
     outputfile = 'generate_words.txt'
-
-
     
-    # for i in range(10000):
-    #     append_to_file(outputfile, generateSentence(grammar))
+    for i in range(10000):
+        append_to_file(outputfile, generate_sentence(grammar))
